@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Raffle Wheel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #wheel {
+            width: 300px;
+            height: 300px;
+            border: 5px solid #ccc;
+            border-radius: 50%;
+            margin: 20px auto;
+            position: relative;
+        }
+        #wheel canvas {
+            width: 100%;
+            height: 100%;
+        }
+        #spinButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Custom Raffle Wheel</h1>
+    <div id="wheel">
+        <canvas id="canvas"></canvas>
+    </div>
+    <button id="spinButton">Spin</button>
+    <div id="result"></div>
+
+    <script>
+        const participants = [
+            { name: 'Person A', weight: 1 },
+            { name: 'Person B', weight: 1 },
+            { name: 'Person C', weight: 1 },
+            { name: 'Person D', weight: 1 },
+            { name: 'You', weight: 1 }, // Ensure you are included
+        ];
+
+        let riggedWinner = 'You'; // Set your name as the rigged winner
+        const excluded = [];
+
+        function getRandomWeightedParticipant() {
+            const filteredParticipants = participants.filter(p => !excluded.includes(p.name));
+
+            // If "You" is not excluded, return "You" as the winner
+            if (filteredParticipants.some(p => p.name === riggedWinner)) {
+                return filteredParticipants.find(p => p.name === riggedWinner);
+            }
+
+            const totalWeight = filteredParticipants.reduce((sum, p) => sum + p.weight, 0);
+            let random = Math.random() * totalWeight;
+
+            for (const participant of filteredParticipants) {
+                if (random < participant.weight) {
+                    return participant;
+                }
+                random -= participant.weight;
+            }
+        }
+
+        function spinWheel() {
+            const winner = getRandomWeightedParticipant();
+            if (!winner) {
+                document.getElementById('result').textContent = 'No more participants!';
+                return;
+            }
+
+            excluded.push(winner.name);
+            document.getElementById('result').textContent = `Winner: ${winner.name}`;
+            drawWheel();
+        }
+
+        function drawWheel() {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            const size = canvas.width;
+            canvas.height = size;
+
+            ctx.clearRect(0, 0, size, size);
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, 2 * Math.PI);
+            ctx.fillStyle = '#f4f4f4';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#000';
+            ctx.stroke();
+
+            const filteredParticipants = participants.filter(p => !excluded.includes(p.name));
+            const totalWeight = filteredParticipants.reduce((sum, p) => sum + p.weight, 0);
+            let startAngle = 0;
+
+            for (const participant of filteredParticipants) {
+                const sliceAngle = (2 * Math.PI * participant.weight) / totalWeight;
+                ctx.beginPath();
+                ctx.moveTo(size / 2, size / 2);
+                ctx.arc(size / 2, size / 2, size / 2, startAngle, startAngle + sliceAngle);
+                ctx.fillStyle = `hsl(${Math.random() * 360}, 80%, 70%)`;
+                ctx.fill();
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.save();
+                ctx.translate(size / 2, size / 2);
+                ctx.rotate(startAngle + sliceAngle / 2);
+                ctx.textAlign = 'right';
+                ctx.fillStyle = '#000';
+                ctx.font = '16px Arial';
+                ctx.fillText(participant.name, size / 2 - 10, 5);
+                ctx.restore();
+
+                startAngle += sliceAngle;
+            }
+        }
+
+        document.getElementById('spinButton').addEventListener('click', spinWheel);
+        drawWheel();
+    </script>
+</body>
+</html>
